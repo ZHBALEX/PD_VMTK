@@ -17,7 +17,7 @@ class CenterlineExtraction:
         self.selected_points = []
         self.point_actors = []
         self.picker = vtk.vtkCellPicker()
-        self.picker.SetTolerance(0.005)  # 增大容差值
+        self.picker.SetTolerance(0.005)  # Increase tolerance value
         self.centerline_actor = None
         self.surface_actor = None
         self.centerlines = None  # Store the centerlines object
@@ -35,14 +35,14 @@ class CenterlineExtraction:
             reader.Update()
             self.surface = reader.GetOutput()
             if self.surface.GetNumberOfPoints() == 0:
-                raise ValueError("表面模型未能正确加载，请检查文件路径和文件格式。")
+                raise ValueError("The surface model could not be loaded correctly. Please check the file path and file format.")
         except Exception as e:
-            print("加载表面模型时出错：{}".format(e))
+            print("Error loading surface model: {}".format(e))
             traceback.print_exc()
-            # 不退出程序，允许用户继续操作
+            # Do not exit the program, allow the user to continue
 
     def preprocess_surface(self):
-        # 使用 vtkCleanPolyData 来清理表面，移除非流形的几何体
+        # Use vtkCleanPolyData to clean the surface, removing non-manifold geometry
         cleaner = vtk.vtkCleanPolyData()
         cleaner.SetInputData(self.surface)
         cleaner.Update()
@@ -85,41 +85,41 @@ class CenterlineExtraction:
         if cell_id >= 0:
             # Add the picked point to the list
             self.selected_points.append(world_position)
-            print("选择的点坐标: {}".format(world_position))
+            print("Selected point coordinates: {}".format(world_position))
             # Display the picked point
             self.display_point(world_position)
         else:
-            print("未选取到有效的表面点。")
+            print("No valid surface point was selected.")
 
     def key_press_event(self, obj, event):
         key = self.interactor.GetKeySym()
         if key == 'space':
             if len(self.selected_points) == 2:
-                print("已选择两个点，正在生成中心线...")
+                print("Two points selected, generating centerline...")
                 self.generate_centerline()
             else:
-                print("已选择{}个点。请选择两个点以继续。".format(len(self.selected_points)))
+                print("Selected {} points. Please select two points to continue.".format(len(self.selected_points)))
         elif key.lower() == 'q':
             if self.selected_points:
-                print("撤销上一次选择的点。")
+                print("Undoing the last selected point.")
                 self.selected_points.pop()
                 actor = self.point_actors.pop()
                 self.renderer.RemoveActor(actor)
                 self.render_window.Render()
             else:
-                print("没有可撤销的点。")
+                print("No points to undo.")
         elif key.lower() == 'a':
             if self.centerlines:
-                print("正在计算横截面...")
+                print("Calculating cross sections...")
                 self.calculate_cross_sections()
             else:
-                print("请先生成中心线。")
+                print("Please generate the centerline first.")
         elif key.lower() == 's':
             if self.centerlines:
-                print("正在计算表面面积...")
+                print("Calculating surface areas...")
                 self.calculate_surface_areas()
             else:
-                print("请先生成中心线。")
+                print("Please generate the centerline first.")
 
     def display_point(self, position):
         # Create a sphere to represent the point
@@ -146,9 +146,9 @@ class CenterlineExtraction:
             source_point = [float(coord) for coord in self.selected_points[0]]
             target_point = [float(coord) for coord in self.selected_points[1]]
 
-            # 打印源点和目标点以检查
-            print("源点：", source_point)
-            print("目标点：", target_point)
+            # Print source and target points for verification
+            print("Source point:", source_point)
+            print("Target point:", target_point)
 
             # Run vmtkcenterlines
             self.centerlines = vmtkscripts.vmtkCenterlines()
@@ -158,17 +158,17 @@ class CenterlineExtraction:
             self.centerlines.TargetPoints = target_point
             self.centerlines.AppendEndPoints = 1
             self.centerlines.Resampling = 1
-            self.centerlines.ResamplingStepLength = 0.5  # 可以根据需要调整步长
+            self.centerlines.ResamplingStepLength = 0.5  # Adjust the step length as needed
             self.centerlines.Execute()
 
-            # 检查中心线是否生成成功
+            # Check if centerlines were successfully generated
             if not self.centerlines.Centerlines or self.centerlines.Centerlines.GetNumberOfPoints() == 0:
-                raise ValueError("中心线生成失败，请检查模型和选取的点。")
+                raise ValueError("Centerline generation failed. Please check the model and selected points.")
 
-            # 对中心线进行平滑处理
+            # Smooth the centerline
             self.smooth_centerline()
 
-            # 检查中心线的方向，必要时反转
+            # Check and reverse the direction of the centerline if necessary
             self.check_and_reverse_centerline()
 
             # Save the centerlines to a file
@@ -176,25 +176,25 @@ class CenterlineExtraction:
             writer.SetFileName(self.output_file)
             writer.SetInputData(self.centerlines.Centerlines)
             writer.Write()
-            print("中心线已保存到 {}".format(self.output_file))
+            print("Centerline has been saved to {}".format(self.output_file))
 
             # Display the centerlines
             self.display_centerlines(self.centerlines.Centerlines)
 
-            # 将表面模型设置为半透明
+            # Set the surface model to semi-transparent
             self.surface_actor.GetProperty().SetOpacity(0.3)
             self.render_window.Render()
         except Exception as e:
-            print("生成中心线时出错：{}".format(e))
+            print("Error generating centerline: {}".format(e))
             traceback.print_exc()
-            # 不退出程序，允许用户继续操作
+            # Do not exit the program, allow the user to continue
 
     def smooth_centerline(self):
-        # 使用 vtkSplineFilter 对中心线进行平滑
+        # Use vtkSplineFilter to smooth the centerline
         spline_filter = vtk.vtkSplineFilter()
         spline_filter.SetInputData(self.centerlines.Centerlines)
         spline_filter.SetSubdivideToLength()
-        spline_filter.SetLength(0.5)  # 可以根据需要调整
+        spline_filter.SetLength(0.5)  # Adjust as needed
         spline_filter.Update()
         self.centerlines.Centerlines = spline_filter.GetOutput()
 
@@ -208,7 +208,7 @@ class CenterlineExtraction:
         dist_to_last = np.linalg.norm(np.array(last_centerline_point) - np.array(self.selected_points[0]))
 
         if dist_to_first > dist_to_last:
-            # 反转中心线
+            # Reverse the centerline
             reversed_centerline = vtk.vtkPolyData()
             reversed_points = vtk.vtkPoints()
             reversed_lines = vtk.vtkCellArray()
@@ -227,7 +227,7 @@ class CenterlineExtraction:
             reversed_centerline.SetLines(reversed_lines)
 
             self.centerlines.Centerlines = reversed_centerline
-            print("中心线已反转，以第一个选择的点为起点。")
+            print("Centerline has been reversed to start from the first selected point.")
 
     def display_centerlines(self, centerlines):
         # Remove existing centerline actor if present
@@ -249,7 +249,7 @@ class CenterlineExtraction:
 
     def calculate_cross_sections(self):
         if not self.centerlines:
-            print("请先生成中心线。")
+            print("Please generate the centerline first.")
             return
 
         # Remove existing cross-section actors
@@ -265,7 +265,7 @@ class CenterlineExtraction:
         num_points = points.GetNumberOfPoints()
 
         if num_points < 3:
-            print("中心线点数不足，无法计算横截面。")
+            print("Insufficient centerline points to calculate cross sections.")
             return
 
         # Calculate cumulative distance along the centerline
@@ -310,17 +310,17 @@ class CenterlineExtraction:
             plane.SetNormal(tangent)
 
             # Perform boolean intersection to get the cross-section
-            cross_section = self.get_cross_section(self.surface, plane, point, radius=5.0)
+            cross_section = self.get_cross_section(self.surface, plane, point, radius=15.0)
 
-            # 检查横截面是否有效
+            # Check if the cross-section is valid
             if cross_section.GetNumberOfPoints() == 0 or cross_section.GetNumberOfPolys() == 0:
-                print("在索引 {} 处未能生成有效的横截面。".format(i))
+                print("Failed to generate a valid cross section at index {}.".format(i))
                 area = 0.0
                 self.cross_section_areas.append(area)
                 continue
 
-            # 打印调试信息
-            print("索引 {}：横截面有 {} 个点和 {} 个多边形。".format(
+            # Print debugging information
+            print("Index {}: Cross section has {} points and {} polygons.".format(
                 i, cross_section.GetNumberOfPoints(), cross_section.GetNumberOfPolys()))
 
             # Calculate area
@@ -331,15 +331,15 @@ class CenterlineExtraction:
 
             self.cross_section_areas.append(area)
 
-        print("横截面计算完成。")
+        print("Cross section calculation completed.")
 
     def get_cross_section(self, surface, plane, point, radius=5.0):
-        # 创建一个球形裁剪器，以限制横截面的范围
+        # Create a spherical clipper to limit the cross-section range
         sphere = vtk.vtkSphere()
         sphere.SetCenter(point)
         sphere.SetRadius(radius)
 
-        # 使用 vtkClipPolyData 来裁剪表面，保留球体内部的部分
+        # Use vtkClipPolyData to clip the surface, keeping the inside of the sphere
         clipper_sphere = vtk.vtkClipPolyData()
         clipper_sphere.SetInputData(surface)
         clipper_sphere.SetClipFunction(sphere)
@@ -347,7 +347,7 @@ class CenterlineExtraction:
         clipper_sphere.Update()
         clipped_surface = clipper_sphere.GetOutput()
 
-        # 使用裁剪后的表面进行截面计算
+        # Use the clipped surface for cross-section calculation
         cutter = vtk.vtkCutter()
         cutter.SetCutFunction(plane)
         cutter.SetInputData(clipped_surface)
@@ -355,21 +355,21 @@ class CenterlineExtraction:
 
         cross_section = cutter.GetOutput()
 
-        # 检查是否有足够的点来形成多边形
+        # Check if there are enough points to form a polygon
         if cross_section.GetNumberOfPoints() < 3:
             return vtk.vtkPolyData()
 
-        # 使用 vtkStripper 来连接线段，形成闭合的多边形
+        # Use vtkStripper to connect line segments into a closed polygon
         stripper = vtk.vtkStripper()
         stripper.SetInputData(cross_section)
         stripper.JoinContiguousSegmentsOn()
         stripper.Update()
 
-        # 检查是否有足够的点
+        # Check if there are enough points
         if stripper.GetOutput().GetNumberOfPoints() < 3:
             return vtk.vtkPolyData()
 
-        # 使用 vtkContourTriangulator 来生成多边形
+        # Use vtkContourTriangulator to generate polygons
         contour = vtk.vtkContourTriangulator()
         contour.SetInputData(stripper.GetOutput())
         contour.Update()
@@ -404,7 +404,7 @@ class CenterlineExtraction:
 
     def calculate_surface_areas(self):
         if not self.cross_section_areas:
-            print("请先计算横截面。")
+            print("Please calculate cross sections first.")
             return
 
         num_points = len(self.cross_section_points)
@@ -413,16 +413,16 @@ class CenterlineExtraction:
             if i == 0:
                 area = 0.0
             else:
-                # 计算两个相邻横截面之间的表面积段
+                # Calculate the surface area segment between two adjacent cross sections
                 distance = self.distance_along_curve[i] - self.distance_along_curve[i - 1]
                 avg_perimeter = (self.cross_section_areas[i] + self.cross_section_areas[i - 1]) / 2.0
                 area = avg_perimeter * distance
             self.surface_areas.append(area)
-        print("表面面积计算完成。")
+        print("Surface area calculation completed.")
 
     def save_to_csv(self, filename):
         # Save the collected data to a CSV file
-        headers = ['distance along curve', 'x', 'y', 'z', 'cross-sectional area at vertex', 'surface area between points']
+        headers = ['distance along curve', 'x', 'y', 'z', 'cross-sectional area at vertex', 'sum of surface areas projected to this vertex']
         with open(filename, 'w', newline='') as csvfile:
             csvwriter = csv.writer(csvfile)
             csvwriter.writerow(headers)
@@ -434,7 +434,7 @@ class CenterlineExtraction:
                 surface_area = self.surface_areas[i] if i < len(self.surface_areas) else 0.0
                 csvwriter.writerow([distance, point[0], point[1], point[2], area, surface_area])
 
-        print("数据已保存到 {}".format(filename))
+        print("Data has been saved to {}".format(filename))
 
     def run(self):
         self.load_surface()
@@ -445,15 +445,37 @@ class CenterlineExtraction:
         # After interactor ends, check if data is available
         if self.cross_section_points and self.distance_along_curve:
             # Save data to CSV
-            csv_filename = os.path.splitext(self.output_file)[0] + '_data.csv'
+            csv_filename = os.path.splitext(self.output_file)[0] + '.csv'
             self.save_to_csv(csv_filename)
         else:
-            print("没有数据需要保存。")
+            print("No data to save.")
 
 if __name__ == '__main__':
-    # 请将以下文件路径替换为您的实际文件路径
-    surface_file = "C:/Users/qd261/Desktop/PD_Study/Secretin_MRCP_Simple/3-Matic_Model/6 NS.stl"
-    output_file = "C:/Users/qd261/Desktop/6 NS_centerline.dat"
+    # Please replace the following file paths with your actual file paths
+
+    N = 8
+    dict = {'1': '1 DJ', 
+            '2':'2 MD',  
+            '4':'4 SM', 
+            '6':'6 NS',
+            '8': '8 PM', 
+            '13':'13 LB', 
+            '14':'14 VK', 
+            '15':'15 SK', 
+            '16':'16 GGG', 
+            '17': '17 VJ', 
+            '18':'18 MDS', 
+            '19':'19 CJ', 
+            '20':'20 TA', 
+            '21':'21 MSA', 
+            '24':'24 BKS',
+            '26':'26 NR', 
+            '27':'27 NA'}
+    N = input("file #:")
+    input_name = dict[str(N)]
+    output_name = input_name
+    surface_file = "C:/Users/qd261/Desktop/PD_Study/Secretin_MRCP_Simple/3-Matic_Model/{}.stl".format(input_name)
+    output_file = r'C:\Users\qd261\Desktop\PD_Study\Secretin_MRCP_Simple\VMTK\{}.scv'.format(output_name)
 
     centerline_extractor = CenterlineExtraction(surface_file, output_file)
     centerline_extractor.run()
