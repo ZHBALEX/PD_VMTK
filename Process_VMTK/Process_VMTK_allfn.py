@@ -158,7 +158,7 @@ class CenterlineExtraction:
             self.centerlines.TargetPoints = target_point
             self.centerlines.AppendEndPoints = 1
             self.centerlines.Resampling = 1
-            self.centerlines.ResamplingStepLength = 0.5  # Adjust the step length as needed
+            self.centerlines.ResamplingStepLength = 0.1  # Adjust the step length as needed
             self.centerlines.Execute()
 
             # Check if centerlines were successfully generated
@@ -194,7 +194,7 @@ class CenterlineExtraction:
         spline_filter = vtk.vtkSplineFilter()
         spline_filter.SetInputData(self.centerlines.Centerlines)
         spline_filter.SetSubdivideToLength()
-        spline_filter.SetLength(0.5)  # Adjust as needed
+        spline_filter.SetLength(0.1)  # Adjust as needed
         spline_filter.Update()
         self.centerlines.Centerlines = spline_filter.GetOutput()
 
@@ -477,5 +477,6 @@ if __name__ == '__main__':
     surface_file = "C:/Users/qd261/Desktop/PD_Study/Secretin_MRCP_Simple/3-Matic_Model/{}.stl".format(input_name)
     output_file = r'C:\Users\qd261\Desktop\PD_Study\Secretin_MRCP_Simple\VMTK\{}.scv'.format(output_name)
 
+    output_file = r'C:\Users\qd261\Desktop\{}.scv'.format(output_name)
     centerline_extractor = CenterlineExtraction(surface_file, output_file)
     centerline_extractor.run()
