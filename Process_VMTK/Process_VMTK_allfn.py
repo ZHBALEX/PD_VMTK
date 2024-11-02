@@ -7,7 +7,7 @@ import traceback
 import numpy as np
 
 class CenterlineExtraction:
-    def __init__(self, surface_file, output_file):
+    def __init__(self, surface_file, output_file, **kwargs):
         self.surface_file = surface_file
         self.output_file = output_file
         self.surface = None
@@ -17,19 +17,32 @@ class CenterlineExtraction:
         self.selected_points = []
         self.point_actors = []
         self.picker = vtk.vtkCellPicker()
-        self.picker.SetTolerance(0.005)  # Increase tolerance value
+        # 使用参数中的picker_tolerance，默认为0.005
+        self.picker_tolerance = kwargs.get('picker_tolerance', 0.005)
+        self.picker.SetTolerance(self.picker_tolerance)
         self.centerline_actor = None
         self.surface_actor = None
-        self.centerlines = None  # Store the centerlines object
+        self.centerlines = None
         self.cross_section_actors = []
         self.cross_section_areas = []
         self.distance_along_curve = []
         self.cross_section_points = []
         self.surface_areas = []
+        # 其他可调参数
+        self.resampling_step_length = kwargs.get('resampling_step_length', 0.1)
+        self.spline_filter_length = kwargs.get('spline_filter_length', 0.1)
+        self.cross_section_radius = kwargs.get('cross_section_radius', 15.0)
+        self.seed_selector_name = kwargs.get('seed_selector_name', 'pointlist')
+        self.append_end_points = kwargs.get('append_end_points', 1)
+        self.resampling = kwargs.get('resampling', 1)
+        self.sphere_radius = kwargs.get('sphere_radius', 5.0)
+        self.sphere_inside_out = kwargs.get('sphere_inside_out', True)
+        self.cross_section_display_color = kwargs.get('cross_section_display_color', (1.0, 0.0, 1.0))
+        self.cross_section_line_width = kwargs.get('cross_section_line_width', 2)
 
     def load_surface(self):
         try:
-            # Read the STL file
+            # 读取STL文件
             reader = vtk.vtkSTLReader()
             reader.SetFileName(self.surface_file)
             reader.Update()
@@ -39,41 +52,40 @@ class CenterlineExtraction:
         except Exception as e:
             print("Error loading surface model: {}".format(e))
             traceback.print_exc()
-            # Do not exit the program, allow the user to continue
 
     def preprocess_surface(self):
-        # Use vtkCleanPolyData to clean the surface, removing non-manifold geometry
+        # 使用vtkCleanPolyData清理表面，移除非流形几何
         cleaner = vtk.vtkCleanPolyData()
         cleaner.SetInputData(self.surface)
         cleaner.Update()
         self.surface = cleaner.GetOutput()
 
     def setup_render(self):
-        # Create a mapper and actor for the surface
+        # 创建表面的mapper和actor
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputData(self.surface)
         self.surface_actor = vtk.vtkActor()
         self.surface_actor.SetMapper(mapper)
 
-        # Create renderer, render window, and interactor
+        # 创建渲染器、渲染窗口和交互器
         self.renderer = vtk.vtkRenderer()
         self.render_window = vtk.vtkRenderWindow()
         self.render_window.AddRenderer(self.renderer)
         self.interactor = vtk.vtkRenderWindowInteractor()
         self.interactor.SetRenderWindow(self.render_window)
 
-        # Add the surface actor to the scene
+        # 将表面actor添加到场景中
         self.renderer.AddActor(self.surface_actor)
         self.renderer.SetBackground(0.1, 0.2, 0.4)
 
-        # Set up the picker
+        # 设置picker
         self.interactor.SetPicker(self.picker)
 
-        # Use trackball camera style for rotation
+        # 使用旋转的交互风格
         style = vtk.vtkInteractorStyleTrackballCamera()
         self.interactor.SetInteractorStyle(style)
 
-        # Set up event handling
+        # 设置事件处理
         self.interactor.AddObserver("LeftButtonPressEvent", self.left_button_press_event)
         self.interactor.AddObserver("KeyPressEvent", self.key_press_event)
 
@@ -83,10 +95,10 @@ class CenterlineExtraction:
         world_position = self.picker.GetPickPosition()
         cell_id = self.picker.GetCellId()
         if cell_id >= 0:
-            # Add the picked point to the list
+            # 将选择的点添加到列表中
             self.selected_points.append(world_position)
             print("Selected point coordinates: {}".format(world_position))
-            # Display the picked point
+            # 显示选择的点
             self.display_point(world_position)
         else:
             print("No valid surface point was selected.")
@@ -122,79 +134,78 @@ class CenterlineExtraction:
                 print("Please generate the centerline first.")
 
     def display_point(self, position):
-        # Create a sphere to represent the point
+        # 创建一个球体来表示点
         sphere = vtk.vtkSphereSource()
         sphere.SetCenter(position)
         sphere.SetRadius(0.5)
         sphere.Update()
 
-        # Create a mapper and actor
+        # 创建mapper和actor
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputConnection(sphere.GetOutputPort())
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
-        actor.GetProperty().SetColor(1.0, 0.0, 0.0)  # Red color
+        actor.GetProperty().SetColor(1.0, 0.0, 0.0)  # 红色
 
-        # Add the actor to the scene and store it
+        # 将actor添加到场景中并存储
         self.renderer.AddActor(actor)
         self.point_actors.append(actor)
         self.render_window.Render()
 
     def generate_centerline(self):
         try:
-            # Extract the source and target points as flat lists
+            # 提取源点和目标点
             source_point = [float(coord) for coord in self.selected_points[0]]
             target_point = [float(coord) for coord in self.selected_points[1]]
 
-            # Print source and target points for verification
+            # 打印源点和目标点以验证
             print("Source point:", source_point)
             print("Target point:", target_point)
 
-            # Run vmtkcenterlines
+            # 运行vmtkcenterlines
             self.centerlines = vmtkscripts.vmtkCenterlines()
             self.centerlines.Surface = self.surface
-            self.centerlines.SeedSelectorName = 'pointlist'
+            self.centerlines.SeedSelectorName = self.seed_selector_name
             self.centerlines.SourcePoints = source_point
             self.centerlines.TargetPoints = target_point
-            self.centerlines.AppendEndPoints = 1
-            self.centerlines.Resampling = 1
-            self.centerlines.ResamplingStepLength = 0.1  # Adjust the step length as needed
+            self.centerlines.AppendEndPoints = self.append_end_points
+            self.centerlines.Resampling = self.resampling
+            self.centerlines.ResamplingStepLength = self.resampling_step_length  # 使用参数
             self.centerlines.Execute()
 
-            # Check if centerlines were successfully generated
+            # 检查中心线是否成功生成
             if not self.centerlines.Centerlines or self.centerlines.Centerlines.GetNumberOfPoints() == 0:
                 raise ValueError("Centerline generation failed. Please check the model and selected points.")
 
-            # Smooth the centerline
+            # 平滑中心线
             self.smooth_centerline()
 
-            # Check and reverse the direction of the centerline if necessary
+            # 检查并在必要时反转中心线方向
             self.check_and_reverse_centerline()
 
-            # Save the centerlines to a file
+            # 将中心线保存到文件
             writer = vtk.vtkPolyDataWriter()
             writer.SetFileName(self.output_file)
             writer.SetInputData(self.centerlines.Centerlines)
             writer.Write()
             print("Centerline has been saved to {}".format(self.output_file))
 
-            # Display the centerlines
+            # 显示中心线
             self.display_centerlines(self.centerlines.Centerlines)
 
-            # Set the surface model to semi-transparent
+            # 将表面模型设置为半透明
             self.surface_actor.GetProperty().SetOpacity(0.3)
             self.render_window.Render()
         except Exception as e:
             print("Error generating centerline: {}".format(e))
             traceback.print_exc()
-            # Do not exit the program, allow the user to continue
 
     def smooth_centerline(self):
-        # Use vtkSplineFilter to smooth the centerline
+        # 使用vtkSplineFilter平滑中心线
         spline_filter = vtk.vtkSplineFilter()
         spline_filter.SetInputData(self.centerlines.Centerlines)
         spline_filter.SetSubdivideToLength()
-        spline_filter.SetLength(0.1)  # Adjust as needed
+        spline_filter.SetLength(self.spline_filter_length)  # 使用参数
         spline_filter.Update()
         self.centerlines.Centerlines = spline_filter.GetOutput()
 
@@ -208,7 +219,7 @@ class CenterlineExtraction:
         dist_to_last = np.linalg.norm(np.array(last_centerline_point) - np.array(self.selected_points[0]))
 
         if dist_to_first > dist_to_last:
-            # Reverse the centerline
+            # 反转中心线
             reversed_centerline = vtk.vtkPolyData()
             reversed_points = vtk.vtkPoints()
             reversed_lines = vtk.vtkCellArray()
@@ -230,20 +241,20 @@ class CenterlineExtraction:
             print("Centerline has been reversed to start from the first selected point.")
 
     def display_centerlines(self, centerlines):
-        # Remove existing centerline actor if present
+        # 如果存在现有的中心线actor，移除它
         if self.centerline_actor:
             self.renderer.RemoveActor(self.centerline_actor)
 
-        # Create a mapper and actor for the centerlines
+        # 创建中心线的mapper和actor
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputData(centerlines)
         self.centerline_actor = vtk.vtkActor()
         self.centerline_actor.SetMapper(mapper)
-        self.centerline_actor.GetProperty().SetColor(1.0, 1.0, 0.0)  # Yellow color
+        self.centerline_actor.GetProperty().SetColor(1.0, 1.0, 0.0)  # 黄色
         self.centerline_actor.GetProperty().SetLineWidth(4)
         self.centerline_actor.GetProperty().SetOpacity(1.0)
 
-        # Add the centerline actor to the scene
+        # 将中心线actor添加到场景中
         self.renderer.AddActor(self.centerline_actor)
         self.render_window.Render()
 
@@ -252,7 +263,7 @@ class CenterlineExtraction:
             print("Please generate the centerline first.")
             return
 
-        # Remove existing cross-section actors
+        # 移除现有的截面actor
         for actor in self.cross_section_actors:
             self.renderer.RemoveActor(actor)
         self.cross_section_actors = []
@@ -260,7 +271,7 @@ class CenterlineExtraction:
         self.distance_along_curve = []
         self.cross_section_points = []
 
-        # Get the centerline points
+        # 获取中心线点
         points = self.centerlines.Centerlines.GetPoints()
         num_points = points.GetNumberOfPoints()
 
@@ -268,7 +279,7 @@ class CenterlineExtraction:
             print("Insufficient centerline points to calculate cross sections.")
             return
 
-        # Calculate cumulative distance along the centerline
+        # 计算沿中心线的累积距离
         cumulative_distances = [0.0]
         for i in range(1, num_points):
             p0 = np.array(points.GetPoint(i - 1))
@@ -278,14 +289,14 @@ class CenterlineExtraction:
 
         self.distance_along_curve = cumulative_distances
 
-        # Preprocess the surface to remove non-manifold edges
+        # 预处理表面以移除非流形边
         self.preprocess_surface()
 
         for i in range(num_points):
             point = np.array(points.GetPoint(i))
             self.cross_section_points.append(point)
 
-            # Compute tangent vector using neighboring points
+            # 使用邻近点计算切向量
             if i == 0:
                 p_prev = np.array(points.GetPoint(i))
                 p_next = np.array(points.GetPoint(i + 1))
@@ -298,56 +309,59 @@ class CenterlineExtraction:
 
             tangent = p_next - p_prev
 
-            # Normalize the tangent vector
+            # 归一化切向量
             if np.linalg.norm(tangent) != 0:
                 tangent = tangent / np.linalg.norm(tangent)
             else:
                 tangent = np.array([1.0, 0.0, 0.0])
 
-            # Create a plane perpendicular to the tangent at this point
+            # 创建在该点垂直于切向量的平面
             plane = vtk.vtkPlane()
             plane.SetOrigin(point)
             plane.SetNormal(tangent)
 
-            # Perform boolean intersection to get the cross-section
-            cross_section = self.get_cross_section(self.surface, plane, point, radius=15.0)
+            # 执行布尔交集以获取截面
+            cross_section = self.get_cross_section(self.surface, plane, point)
 
-            # Check if the cross-section is valid
+            # 检查截面是否有效
             if cross_section.GetNumberOfPoints() == 0 or cross_section.GetNumberOfPolys() == 0:
                 print("Failed to generate a valid cross section at index {}.".format(i))
                 area = 0.0
                 self.cross_section_areas.append(area)
                 continue
 
-            # Print debugging information
+            # 打印调试信息
             print("Index {}: Cross section has {} points and {} polygons.".format(
                 i, cross_section.GetNumberOfPoints(), cross_section.GetNumberOfPolys()))
 
-            # Calculate area
+            # 计算面积
             area = self.calculate_area(cross_section)
 
-            # Display the cross-section
+            # 显示截面
             self.display_cross_section(cross_section)
 
             self.cross_section_areas.append(area)
 
         print("Cross section calculation completed.")
 
-    def get_cross_section(self, surface, plane, point, radius=5.0):
-        # Create a spherical clipper to limit the cross-section range
+    def get_cross_section(self, surface, plane, point):
+        # 创建一个球形裁剪器以限制截面范围
         sphere = vtk.vtkSphere()
         sphere.SetCenter(point)
-        sphere.SetRadius(radius)
+        sphere.SetRadius(self.cross_section_radius)
 
-        # Use vtkClipPolyData to clip the surface, keeping the inside of the sphere
+        # 使用vtkClipPolyData裁剪表面，保留球体内部
         clipper_sphere = vtk.vtkClipPolyData()
         clipper_sphere.SetInputData(surface)
         clipper_sphere.SetClipFunction(sphere)
-        clipper_sphere.InsideOutOn()
+        if self.sphere_inside_out:
+            clipper_sphere.InsideOutOn()
+        else:
+            clipper_sphere.InsideOutOff()
         clipper_sphere.Update()
         clipped_surface = clipper_sphere.GetOutput()
 
-        # Use the clipped surface for cross-section calculation
+        # 使用裁剪后的表面进行截面计算
         cutter = vtk.vtkCutter()
         cutter.SetCutFunction(plane)
         cutter.SetInputData(clipped_surface)
@@ -355,21 +369,21 @@ class CenterlineExtraction:
 
         cross_section = cutter.GetOutput()
 
-        # Check if there are enough points to form a polygon
+        # 检查是否有足够的点形成多边形
         if cross_section.GetNumberOfPoints() < 3:
             return vtk.vtkPolyData()
 
-        # Use vtkStripper to connect line segments into a closed polygon
+        # 使用vtkStripper将线段连接成闭合多边形
         stripper = vtk.vtkStripper()
         stripper.SetInputData(cross_section)
         stripper.JoinContiguousSegmentsOn()
         stripper.Update()
 
-        # Check if there are enough points
+        # 检查是否有足够的点
         if stripper.GetOutput().GetNumberOfPoints() < 3:
             return vtk.vtkPolyData()
 
-        # Use vtkContourTriangulator to generate polygons
+        # 使用vtkContourTriangulator生成多边形
         contour = vtk.vtkContourTriangulator()
         contour.SetInputData(stripper.GetOutput())
         contour.Update()
@@ -387,17 +401,17 @@ class CenterlineExtraction:
         return area
 
     def display_cross_section(self, cross_section):
-        # Create a mapper and actor for the cross-section
+        # 创建截面的mapper和actor
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputData(cross_section)
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
-        actor.GetProperty().SetColor(1.0, 0.0, 1.0)  # Magenta color
-        actor.GetProperty().SetLineWidth(2)
+        actor.GetProperty().SetColor(*self.cross_section_display_color)  # 使用参数
+        actor.GetProperty().SetLineWidth(self.cross_section_line_width)
         actor.GetProperty().SetOpacity(1.0)
         actor.GetProperty().SetRepresentationToSurface()
 
-        # Add the actor to the renderer
+        # 将actor添加到渲染器中
         self.renderer.AddActor(actor)
         self.cross_section_actors.append(actor)
         self.render_window.Render()
@@ -413,7 +427,7 @@ class CenterlineExtraction:
             if i == 0:
                 area = 0.0
             else:
-                # Calculate the surface area segment between two adjacent cross sections
+                # 计算两个相邻截面之间的表面积段
                 distance = self.distance_along_curve[i] - self.distance_along_curve[i - 1]
                 avg_perimeter = (self.cross_section_areas[i] + self.cross_section_areas[i - 1]) / 2.0
                 area = avg_perimeter * distance
@@ -421,7 +435,7 @@ class CenterlineExtraction:
         print("Surface area calculation completed.")
 
     def save_to_csv(self, filename):
-        # Save the collected data to a CSV file
+        # 将收集的数据保存到CSV文件
         headers = ['distance along curve', 'x', 'y', 'z', 'cross-sectional area at vertex', 'sum of surface areas projected to this vertex']
         with open(filename, 'w', newline='') as csvfile:
             csvwriter = csv.writer(csvfile)
@@ -442,16 +456,16 @@ class CenterlineExtraction:
         self.render_window.Render()
         self.interactor.Start()
 
-        # After interactor ends, check if data is available
+        # 在交互结束后，检查数据是否可用
         if self.cross_section_points and self.distance_along_curve:
-            # Save data to CSV
+            # 将数据保存到CSV
             csv_filename = os.path.splitext(self.output_file)[0] + '.csv'
             self.save_to_csv(csv_filename)
         else:
             print("No data to save.")
 
 if __name__ == '__main__':
-    # Please replace the following file paths with your actual file paths
+    # 请将以下文件路径替换为您的实际文件路径
 
     N = 8
     dict = {'1': '1 DJ', 
@@ -477,6 +491,20 @@ if __name__ == '__main__':
     surface_file = "C:/Users/qd261/Desktop/PD_Study/Secretin_MRCP_Simple/3-Matic_Model/{}.stl".format(input_name)
     output_file = r'C:\Users\qd261\Desktop\PD_Study\Secretin_MRCP_Simple\VMTK\{}.scv'.format(output_name)
 
-    output_file = r'C:\Users\qd261\Desktop\{}.scv'.format(output_name)
-    centerline_extractor = CenterlineExtraction(surface_file, output_file)
+    # 设置可调参数
+    params = {
+        'picker_tolerance': 0.005,
+        'resampling_step_length': 0.01,
+        'spline_filter_length': 0.01,
+        'cross_section_radius': 15.0,
+        'seed_selector_name': 'pointlist',
+        'append_end_points': 1,
+        'resampling': 1,
+        'sphere_radius': 5.0,
+        'sphere_inside_out': True,
+        'cross_section_display_color': (1.0, 0.0, 1.0),
+        'cross_section_line_width': 2,
+    }
+
+    centerline_extractor = CenterlineExtraction(surface_file, output_file, **params)
     centerline_extractor.run()
