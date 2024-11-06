@@ -485,18 +485,38 @@ if __name__ == '__main__':
             '24':'24 BKS',
             '26':'26 NR', 
             '27':'27 NA'}
-    N = input("file #:")
-    input_name = dict[str(N)]
-    output_name = input_name
-    surface_file = "C:/Users/qd261/Desktop/PD_Study/Secretin_MRCP_Simple/3-Matic_Model/{}.stl".format(input_name)
-    output_file = r'C:\Users\qd261\Desktop\PD_Study\Secretin_MRCP_Simple\VMTK\{}.scv'.format(output_name)
 
+    ### Secretin_MRCP_GROUP
+    # N = input("file #:")
+    # input_name = dict[str(N)]
+    # output_name = input_name
+    # surface_file = "C:/Users/qd261/Desktop/PD_Study/Secretin_MRCP_Simple/3-Matic_Model/{}.stl".format(input_name)
+    # output_file = r'C:\Users\qd261\Desktop\PD_Study\Secretin_MRCP_Simple\VMTK\{}.scv'.format(output_name)
+
+
+    # ## Hopkins CP1
+    # N = input("file #:")
+    # input_name = str(N)
+    # output_name = input_name
+    # surface_file =r"C:\Users\qd261\Desktop\Hopkins CP1-REDO\3-matic\{}.stl".format(input_name)
+    # output_file = r'C:\Users\qd261\Desktop\Hopkins CP1-REDO\VMTK\{}.scv'.format(output_name)
+
+    ## Hopkins CP2
+    N = input("file #:")
+    input_name = str(N)
+    output_name = input_name
+    surface_file =r"C:\Users\qd261\Desktop\Hopkins CP2-REDO\3-Matic\{}.stl".format(input_name)
+    output_file = r'C:\Users\qd261\Desktop\Hopkins CP2-REDO\VMTK\{}.scv'.format(output_name)
+
+
+    
+    
     # 设置可调参数
     params = {
         'picker_tolerance': 0.005,
-        'resampling_step_length': 0.01,
-        'spline_filter_length': 0.01,
-        'cross_section_radius': 15.0,
+        'resampling_step_length': 0.05,
+        'spline_filter_length': 0.5,
+        'cross_section_radius': 20.0,
         'seed_selector_name': 'pointlist',
         'append_end_points': 1,
         'resampling': 1,
