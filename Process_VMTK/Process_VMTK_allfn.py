@@ -486,12 +486,12 @@ if __name__ == '__main__':
             '26':'26 NR', 
             '27':'27 NA'}
 
-    ### Secretin_MRCP_GROUP
-    # N = input("file #:")
-    # input_name = dict[str(N)]
-    # output_name = input_name
-    # surface_file = "C:/Users/qd261/Desktop/PD_Study/Secretin_MRCP_Simple/3-Matic_Model/{}.stl".format(input_name)
-    # output_file = r'C:\Users\qd261\Desktop\PD_Study\Secretin_MRCP_Simple\VMTK\{}.scv'.format(output_name)
+    ## Secretin_MRCP_GROUP
+    N = input("file #:")
+    input_name = dict[str(N)]
+    output_name = input_name
+    surface_file = "C:/Users/qd261/Desktop/PD_Study/Secretin_MRCP_Simple/3-Matic_Model/{}.stl".format(input_name)
+    output_file = r'C:\Users\qd261\Desktop\PD_Study\Secretin_MRCP_Simple\VMTK\{}.scv'.format(output_name)
 
 
     # ## Hopkins CP1
@@ -501,12 +501,12 @@ if __name__ == '__main__':
     # surface_file =r"C:\Users\qd261\Desktop\Hopkins CP1-REDO\3-matic\{}.stl".format(input_name)
     # output_file = r'C:\Users\qd261\Desktop\Hopkins CP1-REDO\VMTK\{}.scv'.format(output_name)
 
-    ## Hopkins CP2
-    N = input("file #:")
-    input_name = str(N)
-    output_name = input_name
-    surface_file =r"C:\Users\qd261\Desktop\Hopkins CP2-REDO\3-Matic\{}.stl".format(input_name)
-    output_file = r'C:\Users\qd261\Desktop\Hopkins CP2-REDO\VMTK\{}.scv'.format(output_name)
+    # ## Hopkins CP2
+    # N = input("file #:")
+    # input_name = str(N)
+    # output_name = input_name
+    # surface_file =r"C:\Users\qd261\Desktop\Hopkins CP2-REDO\3-Matic\{}.stl".format(input_name)
+    # output_file = r'C:\Users\qd261\Desktop\Hopkins CP2-REDO\VMTK\{}.scv'.format(output_name)
 
 
     
