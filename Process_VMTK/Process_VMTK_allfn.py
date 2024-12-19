@@ -486,13 +486,21 @@ if __name__ == '__main__':
             '26':'26 NR', 
             '27':'27 NA'}
 
-    ## Secretin_MRCP_GROUP
-    N = input("file #:")
-    input_name = dict[str(N)]
-    output_name = input_name
-    surface_file = "C:/Users/qd261/Desktop/PD_Study/Secretin_MRCP_Simple/3-Matic_Model/{}.stl".format(input_name)
-    output_file = r'C:\Users\qd261\Desktop\PD_Study\Secretin_MRCP_Simple\VMTK\{}.scv'.format(output_name)
+    # ## Secretin_MRCP_GROUP
+    # N = input("file #:")
+    # input_name = dict[str(N)]
+    # output_name = input_name
+    # surface_file = "C:/Users/qd261/Desktop/PD_Study/Secretin_MRCP_Simple/3-Matic_Model/{}.stl".format(input_name)
+    # output_file = r'C:\Users\qd261\Desktop\PD_Study\Secretin_MRCP_Simple\VMTK\{}.scv'.format(output_name)
 
+
+
+    ## Secretin_MRCP_GROUP
+    # N = input("file #:")
+    # input_name = dict[str(N)]
+    # output_name = input_name
+    surface_file = r"C:\Users\qd261\Desktop\Secretin_MRCP_Simple_new\3-Matic\08_Exp84.stl"
+    output_file = r'C:\Users\qd261\Desktop\08_Exp84.scv'
 
     # ## Hopkins CP1
     # N = input("file #:")
