@@ -499,8 +499,15 @@ if __name__ == '__main__':
     # N = input("file #:")
     # input_name = dict[str(N)]
     # output_name = input_name
-    surface_file = r"C:\Users\qd261\Desktop\Secretin_MRCP_Simple_new\3-Matic\08_Exp84.stl"
-    output_file = r'C:\Users\qd261\Desktop\08_Exp84.csv'
+
+
+
+    # surface_file = r"C:\Users\qd261\Desktop\Secretin_MRCP_Simple_new\3-Matic\08_Exp84.stl"
+    # output_file = r'C:\Users\qd261\Desktop\08_Exp84.csv'
+
+
+    surface_file = r"C:\Users\qd261\Desktop\Secretin_MRCP_Simple_new\3-Matic\02_cut1.stl"
+    output_file = r'C:\Users\qd261\Desktop\Secretin_MRCP_Simple_new\centerline\02_cut1.csv'
 
     # ## Hopkins CP1
     # N = input("file #:")
