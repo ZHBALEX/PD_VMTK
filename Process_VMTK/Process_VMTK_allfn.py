@@ -506,8 +506,9 @@ if __name__ == '__main__':
     # output_file = r'C:\Users\qd261\Desktop\08_Exp84.csv'
 
 
-    surface_file = r"C:\Users\qd261\Desktop\Secretin_MRCP_Simple_new\3-Matic\18_ampx2_cut2.stl"
-    output_file = r'C:\Users\qd261\Desktop\Secretin_MRCP_Simple_new\centerline\18_ampx2_cut2.csv'
+    Name = '27'
+    surface_file = r"C:\Users\qd261\Desktop\Secretin_MRCP_Simple_new\3-Matic\{}.stl".format(Name)
+    output_file = r'C:\Users\qd261\Desktop\Secretin_MRCP_Simple_new\centerline\{}.csv'.format(Name)
 
     # ## Hopkins CP1
     # N = input("file #:")
