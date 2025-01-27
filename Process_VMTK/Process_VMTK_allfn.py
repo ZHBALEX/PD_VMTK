@@ -506,9 +506,9 @@ if __name__ == '__main__':
     # output_file = r'C:\Users\qd261\Desktop\08_Exp84.csv'
 
 
-    Name = '27'
-    surface_file = r"C:\Users\qd261\Desktop\Secretin_MRCP_Simple_new\3-Matic\{}.stl".format(Name)
-    output_file = r'C:\Users\qd261\Desktop\Secretin_MRCP_Simple_new\centerline\{}.csv'.format(Name)
+    # Name = '27'
+    # surface_file = r"C:\Users\qd261\Desktop\Secretin_MRCP_Simple_new\3-Matic\{}.stl".format(Name)
+    # output_file = r'C:\Users\qd261\Desktop\Secretin_MRCP_Simple_new\centerline\{}.csv'.format(Name)
 
     # ## Hopkins CP1
     # N = input("file #:")
@@ -517,12 +517,12 @@ if __name__ == '__main__':
     # surface_file =r"C:\Users\qd261\Desktop\Hopkins CP1-REDO\3-matic\{}.stl".format(input_name)
     # output_file = r'C:\Users\qd261\Desktop\Hopkins CP1-REDO\VMTK\{}.scv'.format(output_name)
 
-    # ## Hopkins CP2
-    # N = input("file #:")
-    # input_name = str(N)
-    # output_name = input_name
-    # surface_file =r"C:\Users\qd261\Desktop\Hopkins CP2-REDO\3-Matic\{}.stl".format(input_name)
-    # output_file = r'C:\Users\qd261\Desktop\Hopkins CP2-REDO\VMTK\{}.scv'.format(output_name)
+    ## Hopkins CP2
+    N = input("file #:")
+    input_name = str(N)
+    output_name = input_name
+    surface_file =r"C:\Users\qd261\Desktop\Hopkins CP2-REDO\3-Matic\{}.stl".format(input_name)
+    output_file = r'C:\Users\qd261\Desktop\Hopkins CP2-REDO\VMTK\{}.scv'.format(output_name)
 
 
     
