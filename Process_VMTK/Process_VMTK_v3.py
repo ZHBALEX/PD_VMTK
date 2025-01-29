@@ -28,6 +28,10 @@ class CenterlineExtraction:
         self.distance_along_curve = []
         self.cross_section_points = []
         self.surface_areas = []
+        
+        # 新增：用于存储各截面的“周长”
+        self.cross_section_perimeters = []
+
         # 其他可调参数
         self.resampling_step_length = kwargs.get('resampling_step_length', 0.1)
         self.spline_filter_length = kwargs.get('spline_filter_length', 0.1)
@@ -170,7 +174,7 @@ class CenterlineExtraction:
             self.centerlines.TargetPoints = target_point
             self.centerlines.AppendEndPoints = self.append_end_points
             self.centerlines.Resampling = self.resampling
-            self.centerlines.ResamplingStepLength = self.resampling_step_length  # 使用参数
+            self.centerlines.ResamplingStepLength = self.resampling_step_length
             self.centerlines.Execute()
 
             # 检查中心线是否成功生成
@@ -205,7 +209,7 @@ class CenterlineExtraction:
         spline_filter = vtk.vtkSplineFilter()
         spline_filter.SetInputData(self.centerlines.Centerlines)
         spline_filter.SetSubdivideToLength()
-        spline_filter.SetLength(self.spline_filter_length)  # 使用参数
+        spline_filter.SetLength(self.spline_filter_length)
         spline_filter.Update()
         self.centerlines.Centerlines = spline_filter.GetOutput()
 
@@ -270,6 +274,9 @@ class CenterlineExtraction:
         self.cross_section_areas = []
         self.distance_along_curve = []
         self.cross_section_points = []
+        
+        # 新增：清空/重置截面周长列表
+        self.cross_section_perimeters = []
 
         # 获取中心线点
         points = self.centerlines.Centerlines.GetPoints()
@@ -326,8 +333,8 @@ class CenterlineExtraction:
             # 检查截面是否有效
             if cross_section.GetNumberOfPoints() == 0 or cross_section.GetNumberOfPolys() == 0:
                 print("Failed to generate a valid cross section at index {}.".format(i))
-                area = 0.0
-                self.cross_section_areas.append(area)
+                self.cross_section_areas.append(0.0)
+                self.cross_section_perimeters.append(0.0)
                 continue
 
             # 打印调试信息
@@ -336,11 +343,15 @@ class CenterlineExtraction:
 
             # 计算面积
             area = self.calculate_area(cross_section)
+            # 计算周长(修复新增)
+            perimeter = self.calculate_perimeter(cross_section)
 
             # 显示截面
             self.display_cross_section(cross_section)
 
+            # 记录
             self.cross_section_areas.append(area)
+            self.cross_section_perimeters.append(perimeter)
 
         print("Cross section calculation completed.")
 
@@ -393,12 +404,46 @@ class CenterlineExtraction:
         return triangulated
 
     def calculate_area(self, polydata):
+        """计算截面多边形的面积."""
         if polydata.GetNumberOfPolys() == 0:
             return 0.0
         mass = vtk.vtkMassProperties()
         mass.SetInputData(polydata)
         area = mass.GetSurfaceArea()
         return area
+
+    def calculate_perimeter(self, polydata):
+        """计算截面多边形的周长."""
+        if polydata.GetNumberOfCells() == 0:
+            return 0.0
+
+        # 提取多边形边界
+        featureEdges = vtk.vtkFeatureEdges()
+        featureEdges.SetInputData(polydata)
+        # 仅保留边界边
+        featureEdges.FeatureEdgesOff()
+        featureEdges.ManifoldEdgesOff()
+        featureEdges.NonManifoldEdgesOff()
+        featureEdges.BoundaryEdgesOn()
+        featureEdges.Update()
+
+        boundary_poly = featureEdges.GetOutput()
+        if boundary_poly.GetNumberOfCells() == 0:
+            return 0.0
+
+        total_length = 0.0
+        cell_points = vtk.vtkIdList()
+        for i in range(boundary_poly.GetNumberOfCells()):
+            boundary_poly.GetCellPoints(i, cell_points)
+            num_ids = cell_points.GetNumberOfIds()
+            for j in range(num_ids - 1):
+                p0_id = cell_points.GetId(j)
+                p1_id = cell_points.GetId(j + 1)
+                p0 = np.array(boundary_poly.GetPoint(p0_id))
+                p1 = np.array(boundary_poly.GetPoint(p1_id))
+                total_length += np.linalg.norm(p1 - p0)
+
+        return total_length
 
     def display_cross_section(self, cross_section):
         # 创建截面的mapper和actor
@@ -417,7 +462,8 @@ class CenterlineExtraction:
         self.render_window.Render()
 
     def calculate_surface_areas(self):
-        if not self.cross_section_areas:
+        """修复后的管壁侧面积计算，使用周长平均值 * 中心线距离."""
+        if not self.cross_section_perimeters:
             print("Please calculate cross sections first.")
             return
 
@@ -425,25 +471,33 @@ class CenterlineExtraction:
         self.surface_areas = []
         for i in range(num_points):
             if i == 0:
-                area = 0.0
+                area_segment = 0.0
             else:
-                # 计算两个相邻截面之间的表面积段
                 distance = self.distance_along_curve[i] - self.distance_along_curve[i - 1]
-                avg_perimeter = (self.cross_section_areas[i] + self.cross_section_areas[i - 1]) / 2.0
-                area = avg_perimeter * distance
-            self.surface_areas.append(area)
+                # 周长平均值
+                avg_perimeter = (self.cross_section_perimeters[i] + self.cross_section_perimeters[i - 1]) / 2.0
+                # 相邻截面的管壁表面积近似：平均周长 * 中心线段长度
+                area_segment = avg_perimeter * distance
+            self.surface_areas.append(area_segment)
         print("Surface area calculation completed.")
 
     def save_to_csv(self, filename):
         # 将收集的数据保存到CSV文件
-        headers = ['distance along curve', 'x', 'y', 'z', 'cross-sectional area at vertex', 'sum of surface areas projected to this vertex']
+        headers = [
+            'distance along curve', 
+            'x', 'y', 'z', 
+            'cross-sectional area at vertex', 
+            'sum of surface areas projected to this vertex'
+        ]
         with open(filename, 'w', newline='') as csvfile:
             csvwriter = csv.writer(csvfile)
             csvwriter.writerow(headers)
             num_points = len(self.cross_section_points)
+            # 这里的 'sum of surface areas projected to this vertex'
+            # 依然是按照原意：将第 i 段的管壁面积写到第 i 行处。
             for i in range(num_points):
                 point = self.cross_section_points[i]
-                distance = self.distance_along_curve[i]
+                distance = self.distance_along_curve[i] if i < len(self.distance_along_curve) else 0.0
                 area = self.cross_section_areas[i] if i < len(self.cross_section_areas) else 0.0
                 surface_area = self.surface_areas[i] if i < len(self.surface_areas) else 0.0
                 csvwriter.writerow([distance, point[0], point[1], point[2], area, surface_area])
@@ -464,69 +518,13 @@ class CenterlineExtraction:
         else:
             print("No data to save.")
 
+
 if __name__ == '__main__':
-    # 请将以下文件路径替换为您的实际文件路径
-
-    N = 8
-    dict = {'1': '1 DJ', 
-            '2':'2 MD',  
-            '4':'4 SM', 
-            '6':'6 NS',
-            '8': '8 PM', 
-            '13':'13 LB', 
-            '14':'14 VK', 
-            '15':'15 SK', 
-            '16':'16 GGG', 
-            '17': '17 VJ', 
-            '18':'18 MDS', 
-            '19':'19 CJ', 
-            '20':'20 TA', 
-            '21':'21 MSA', 
-            '24':'24 BKS',
-            '26':'26 NR', 
-            '27':'27 NA'}
-
-    # ## Secretin_MRCP_GROUP
-    # N = input("file #:")
-    # input_name = dict[str(N)]
-    # output_name = input_name
-    # surface_file = "C:/Users/qd261/Desktop/PD_Study/Secretin_MRCP_Simple/3-Matic_Model/{}.stl".format(input_name)
-    # output_file = r'C:\Users\qd261\Desktop\PD_Study\Secretin_MRCP_Simple\VMTK\{}.scv'.format(output_name)
-
-
-
-    ## Secretin_MRCP_GROUP
-    # N = input("file #:")
-    # input_name = dict[str(N)]
-    # output_name = input_name
-
-
-
-    # surface_file = r"C:\Users\qd261\Desktop\Secretin_MRCP_Simple_new\3-Matic\08_Exp84.stl"
-    # output_file = r'C:\Users\qd261\Desktop\08_Exp84.csv'
-
-
+    # 下面仅为示例，你可根据实际情况修改输入输出文件。
     Name = '27_2'
     surface_file = r"C:\Users\qd261\Desktop\Secretin_MRCP_Simple_new\3-Matic\{}.stl".format(Name)
     output_file = r'C:\Users\qd261\Desktop\Secretin_MRCP_Simple_new\centerline\{}.csv'.format(Name)
 
-    # ## Hopkins CP1
-    # N = input("file #:")
-    # input_name = str(N)
-    # output_name = input_name
-    # surface_file =r"C:\Users\qd261\Desktop\Hopkins CP1-REDO\3-matic\{}.stl".format(input_name)
-    # output_file = r'C:\Users\qd261\Desktop\Hopkins CP1-REDO\VMTK\{}.scv'.format(output_name)
-
-    # ## Hopkins CP2
-    # N = input("file #:")
-    # input_name = str(N)
-    # output_name = input_name
-    # surface_file =r"C:\Users\qd261\Desktop\Hopkins CP2-REDO\3-Matic\{}.stl".format(input_name)
-    # output_file = r'C:\Users\qd261\Desktop\Hopkins CP2-REDO\VMTK\{}.scv'.format(output_name)
-
-
-    
-    
     # 设置可调参数
     params = {
         'picker_tolerance': 0.005,
