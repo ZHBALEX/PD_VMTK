@@ -42,13 +42,23 @@ class CenterlineExtraction:
         self.sphere_radius = kwargs.get('sphere_radius', 5.0)
         self.sphere_inside_out = kwargs.get('sphere_inside_out', True)
         
-        # 颜色参数接口（各颜色值均为RGB三元组，范围0～1）
-        self.interface_bg_color = kwargs.get('interface_bg_color', (0.1, 0.2, 0.4))      # 界面背景色
-        self.surface_color = kwargs.get('surface_color', (0.8, 0.8, 0.8))                # 物体（表面）颜色
-        self.centerline_color = kwargs.get('centerline_color', (1.0, 1.0, 0.0))           # 中心线颜色
-        self.selected_point_color = kwargs.get('selected_point_color', (1.0, 0.0, 0.0))   # 用户选择的点颜色
-        self.cross_section_display_color = kwargs.get('cross_section_display_color', (1.0, 0.0, 1.0))
+        # 颜色参数接口（输入为0～255，这里转换为0～1）
+        self.interface_bg_color = self.normalize_color(kwargs.get('interface_bg_color', (26, 51, 102)))      # 界面背景色
+        self.surface_color = self.normalize_color(kwargs.get('surface_color', (204, 204, 204)))                # 物体（表面）颜色
+        self.centerline_color = self.normalize_color(kwargs.get('centerline_color', (255, 255, 0)))           # 中心线颜色
+        self.selected_point_color = self.normalize_color(kwargs.get('selected_point_color', (255, 0, 0)))       # 用户选择的点颜色
+        self.cross_section_display_color = self.normalize_color(kwargs.get('cross_section_display_color', (255, 0, 255)))
         self.cross_section_line_width = kwargs.get('cross_section_line_width', 2)
+        # 新增：横截面透明度参数（范围0～1），默认不透明
+        self.cross_section_opacity = kwargs.get('cross_section_opacity', 1.0)
+        
+    def normalize_color(self, color):
+        """
+        如果颜色值中有任一分量大于1，则认为是0～255的输入格式，转换为0～1格式。
+        """
+        if any(c > 1 for c in color):
+            return tuple(c/255.0 for c in color)
+        return color
 
     def load_surface(self):
         try:
@@ -461,10 +471,10 @@ class CenterlineExtraction:
         mapper.SetInputData(cross_section)
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
-        # 使用可调的横截面颜色和线宽
+        # 使用可调的横截面颜色、线宽以及透明度（透明度接口）
         actor.GetProperty().SetColor(*self.cross_section_display_color)
         actor.GetProperty().SetLineWidth(self.cross_section_line_width)
-        actor.GetProperty().SetOpacity(1.0)
+        actor.GetProperty().SetOpacity(self.cross_section_opacity)
         actor.GetProperty().SetRepresentationToSurface()
 
         # 将actor添加到渲染器中
@@ -532,13 +542,15 @@ class CenterlineExtraction:
 
 if __name__ == '__main__':
     # 下面仅为示例，你可根据实际情况修改输入输出文件路径
-    N = input("file #:")
+    # N = input("file #:")
+
+    N = "095_Expmodified_inner1"
     input_name = str(N)
     output_name = input_name
     surface_file = r"C:\Users\qd261\Desktop\Hopkins CP2-REDO\3-Matic\{}.stl".format(input_name)
     output_file = r"C:\Users\qd261\Desktop\Hopkins CP2-REDO\VMTK\{}.scv".format(output_name)
 
-    # 设置可调参数，包括颜色参数
+    # 设置可调参数，颜色参数现在使用0～255的格式，同时设置横截面透明度
     params = {
         'picker_tolerance': 0.005,
         'resampling_step_length': 0.05,
@@ -549,13 +561,15 @@ if __name__ == '__main__':
         'resampling': 1,
         'sphere_radius': 5.0,
         'sphere_inside_out': True,
-        # 颜色参数（RGB三元组，取值范围0～1）
-        'interface_bg_color': (0.1, 0.9, 0.4),       # 界面背景色
-        'surface_color': (0.8, 0.8, 0.8),            # 物体（表面）颜色
-        'centerline_color': (1.0, 1.0, 0.0),         # 中心线颜色
-        'selected_point_color': (1.0, 0.0, 0.0),     # 选择点颜色
-        'cross_section_display_color': (1.0, 0.0, 1.0),  # 横截面颜色
+        # 颜色参数（RGB三元组，取值范围0～255）
+        'interface_bg_color': (255, 255, 255),       # 界面背景色
+        'surface_color': (157, 195, 231),              # 物体（表面）颜色
+        'centerline_color': (239, 122, 109),           # 中心线颜色
+        'selected_point_color': (215, 99, 160),        # 选择点颜色
+        'cross_section_display_color': (147, 148, 231), # 横截面颜色
         'cross_section_line_width': 2,
+        # 新增：横截面透明度参数（0.0～1.0），例如设置为0.7表示70%不透明
+        'cross_section_opacity': 0.4,
     }
 
     centerline_extractor = CenterlineExtraction(surface_file, output_file, **params)
