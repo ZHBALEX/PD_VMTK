@@ -31,7 +31,7 @@ class CenterlineExtraction:
         
         # 新增：用于存储各截面的“周长”
         self.cross_section_perimeters = []
-        
+
         # 其他可调参数
         self.resampling_step_length = kwargs.get('resampling_step_length', 0.1)
         self.spline_filter_length = kwargs.get('spline_filter_length', 0.1)
@@ -41,12 +41,6 @@ class CenterlineExtraction:
         self.resampling = kwargs.get('resampling', 1)
         self.sphere_radius = kwargs.get('sphere_radius', 5.0)
         self.sphere_inside_out = kwargs.get('sphere_inside_out', True)
-        
-        # 颜色参数接口（各颜色值均为RGB三元组，范围0～1）
-        self.interface_bg_color = kwargs.get('interface_bg_color', (0.1, 0.2, 0.4))      # 界面背景色
-        self.surface_color = kwargs.get('surface_color', (0.8, 0.8, 0.8))                # 物体（表面）颜色
-        self.centerline_color = kwargs.get('centerline_color', (1.0, 1.0, 0.0))           # 中心线颜色
-        self.selected_point_color = kwargs.get('selected_point_color', (1.0, 0.0, 0.0))   # 用户选择的点颜色
         self.cross_section_display_color = kwargs.get('cross_section_display_color', (1.0, 0.0, 1.0))
         self.cross_section_line_width = kwargs.get('cross_section_line_width', 2)
 
@@ -76,8 +70,6 @@ class CenterlineExtraction:
         mapper.SetInputData(self.surface)
         self.surface_actor = vtk.vtkActor()
         self.surface_actor.SetMapper(mapper)
-        # 设置物体（表面）颜色
-        self.surface_actor.GetProperty().SetColor(*self.surface_color)
 
         # 创建渲染器、渲染窗口和交互器
         self.renderer = vtk.vtkRenderer()
@@ -88,7 +80,7 @@ class CenterlineExtraction:
 
         # 将表面actor添加到场景中
         self.renderer.AddActor(self.surface_actor)
-        self.renderer.SetBackground(*self.interface_bg_color)
+        self.renderer.SetBackground(0.1, 0.2, 0.4)
 
         # 设置picker
         self.interactor.SetPicker(self.picker)
@@ -157,8 +149,7 @@ class CenterlineExtraction:
         mapper.SetInputConnection(sphere.GetOutputPort())
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
-        # 使用可调的选择点颜色
-        actor.GetProperty().SetColor(*self.selected_point_color)
+        actor.GetProperty().SetColor(1.0, 0.0, 0.0)  # 红色
 
         # 将actor添加到场景中并存储
         self.renderer.AddActor(actor)
@@ -263,8 +254,7 @@ class CenterlineExtraction:
         mapper.SetInputData(centerlines)
         self.centerline_actor = vtk.vtkActor()
         self.centerline_actor.SetMapper(mapper)
-        # 使用可调的中心线颜色
-        self.centerline_actor.GetProperty().SetColor(*self.centerline_color)
+        self.centerline_actor.GetProperty().SetColor(1.0, 1.0, 0.0)  # 黄色
         self.centerline_actor.GetProperty().SetLineWidth(4)
         self.centerline_actor.GetProperty().SetOpacity(1.0)
 
@@ -353,7 +343,7 @@ class CenterlineExtraction:
 
             # 计算面积
             area = self.calculate_area(cross_section)
-            # 计算周长
+            # 计算周长(修复新增)
             perimeter = self.calculate_perimeter(cross_section)
 
             # 显示截面
@@ -461,8 +451,7 @@ class CenterlineExtraction:
         mapper.SetInputData(cross_section)
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
-        # 使用可调的横截面颜色和线宽
-        actor.GetProperty().SetColor(*self.cross_section_display_color)
+        actor.GetProperty().SetColor(*self.cross_section_display_color)  # 使用参数
         actor.GetProperty().SetLineWidth(self.cross_section_line_width)
         actor.GetProperty().SetOpacity(1.0)
         actor.GetProperty().SetRepresentationToSurface()
@@ -531,14 +520,20 @@ class CenterlineExtraction:
 
 
 if __name__ == '__main__':
-    # 下面仅为示例，你可根据实际情况修改输入输出文件路径
+    # # 下面仅为示例，你可根据实际情况修改输入输出文件。
+    # Name = '16'
+    # surface_file = r"C:\Users\qd261\Desktop\Secretin_MRCP_Simple_new\3-Matic\{}.stl".format(Name)
+    # output_file = r'C:\Users\qd261\Desktop\Secretin_MRCP_Simple_new\centerline\{}.csv'.format(Name)
+
+    ## Hopkins CP2
     N = input("file #:")
     input_name = str(N)
     output_name = input_name
-    surface_file = r"C:\Users\qd261\Desktop\Hopkins CP2-REDO\3-Matic\{}.stl".format(input_name)
-    output_file = r"C:\Users\qd261\Desktop\Hopkins CP2-REDO\VMTK\{}.scv".format(output_name)
+    surface_file =r"C:\Users\qd261\Desktop\Hopkins CP2-REDO\3-Matic\{}.stl".format(input_name)
+    output_file = r'C:\Users\qd261\Desktop\Hopkins CP2-REDO\VMTK\{}.scv'.format(output_name)
 
-    # 设置可调参数，包括颜色参数
+
+    # 设置可调参数
     params = {
         'picker_tolerance': 0.005,
         'resampling_step_length': 0.05,
@@ -549,12 +544,7 @@ if __name__ == '__main__':
         'resampling': 1,
         'sphere_radius': 5.0,
         'sphere_inside_out': True,
-        # 颜色参数（RGB三元组，取值范围0～1）
-        'interface_bg_color': (0.1, 0.9, 0.4),       # 界面背景色
-        'surface_color': (0.8, 0.8, 0.8),            # 物体（表面）颜色
-        'centerline_color': (1.0, 1.0, 0.0),         # 中心线颜色
-        'selected_point_color': (1.0, 0.0, 0.0),     # 选择点颜色
-        'cross_section_display_color': (1.0, 0.0, 1.0),  # 横截面颜色
+        'cross_section_display_color': (1.0, 0.0, 1.0),
         'cross_section_line_width': 2,
     }
 

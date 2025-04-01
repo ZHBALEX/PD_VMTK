@@ -544,11 +544,32 @@ if __name__ == '__main__':
     # 下面仅为示例，你可根据实际情况修改输入输出文件路径
     # N = input("file #:")
 
-    N = "095_Expmodified_inner1"
+    # N = "095_Expmodified_inner1_or"
+    # # N = "014"
+    # input_name = str(N)
+    # output_name = input_name
+    # surface_file = r"C:\Users\qd261\Desktop\Hopkins CP2-REDO\3-Matic\{}.stl".format(input_name)
+    # output_file = r"C:\Users\qd261\Desktop\Hopkins CP2-REDO\VMTK\{}.scv".format(output_name)
+
+
+    # N = "063_1"
+    # input_name = str(N)
+    # output_name = input_name
+    # surface_file = r"C:\Users\qd261\Desktop\Hopkins CP2-REDO\3-Matic\{}.stl".format(input_name)
+    # output_file = r"C:\Users\qd261\Desktop\Hopkins CP2-REDO\VMTK\{}.scv".format(output_name)
+
+    ## Hopkins CP2
+    N = input("file #:")
     input_name = str(N)
     output_name = input_name
-    surface_file = r"C:\Users\qd261\Desktop\Hopkins CP2-REDO\3-Matic\{}.stl".format(input_name)
-    output_file = r"C:\Users\qd261\Desktop\Hopkins CP2-REDO\VMTK\{}.scv".format(output_name)
+    surface_file =r"C:\Users\qd261\Desktop\Hopkins CP2-REDO\3-Matic\{}.stl".format(input_name)
+    output_file = r'C:\Users\qd261\Desktop\Hopkins CP2-REDO\VMTK\{}.scv'.format(output_name)
+
+    # Name = '08_Exp84'
+    # surface_file = r"C:\Users\qd261\Desktop\Secretin_MRCP_Simple_new\3-Matic\{}.stl".format(Name)
+    # output_file = r'C:\Users\qd261\Desktop\Secretin_MRCP_Simple_new\centerline\{}.csv'.format(Name)
+
+
 
     # 设置可调参数，颜色参数现在使用0～255的格式，同时设置横截面透明度
     params = {
