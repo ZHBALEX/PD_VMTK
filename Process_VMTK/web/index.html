@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PD VMTK Centerline</title>
+  <link rel="stylesheet" href="/web/style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <main class="app-shell">
+    <aside class="sidebar">
+      <header class="app-header">
+        <h1>PD VMTK Centerline</h1>
+        <p>Load, edit, extract, measure, then export.</p>
+      </header>
+
+      <section class="panel">
+        <h2>1. Model</h2>
+        <label>STL surface<input id="surfaceFile" type="file" accept=".stl"></label>
+        <div class="grid two">
+          <label>Output folder<input id="outputDir" type="text"></label>
+          <label>Output name<input id="outputName" type="text" value="centerline"></label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>2. View</h2>
+        <div class="grid two">
+          <label>Surface<input id="surfaceColor" type="color" value="#9dc3e7"></label>
+          <label>Centerline<input id="centerlineColor" type="color" value="#ef7a6d"></label>
+          <label>Points<input id="pointColor" type="color" value="#d763a0"></label>
+          <label>Sections<input id="sectionColor" type="color" value="#9394e7"></label>
+          <label>Opacity<input id="surfaceOpacity" type="number" min="0.05" max="1" step="0.05" value="0.72"></label>
+        </div>
+        <label class="toggle"><input id="showBox" type="checkbox" checked> Show cutting box</label>
+        <label class="toggle"><input id="showAxes" type="checkbox" checked> Show axes</label>
+      </section>
+
+      <section class="panel">
+        <h2>3. Geometry Edit</h2>
+        <label>
+          Box mode
+          <select id="cutMode">
+            <option value="inside">Keep box-overlap region</option>
+            <option value="outside">Remove box-overlap region</option>
+          </select>
+        </label>
+        <div class="grid three">
+          <label>X min<input id="boxXMin" type="number" step="0.5" value="-1"></label>
+          <label>X max<input id="boxXMax" type="number" step="0.5" value="1"></label>
+          <label>Y min<input id="boxYMin" type="number" step="0.5" value="-1"></label>
+          <label>Y max<input id="boxYMax" type="number" step="0.5" value="1"></label>
+          <label>Z min<input id="boxZMin" type="number" step="0.5" value="-1"></label>
+          <label>Z max<input id="boxZMax" type="number" step="0.5" value="1"></label>
+        </div>
+        <label class="toggle"><input id="cutResample" type="checkbox" checked> Auto resample cut</label>
+        <div class="actions compact">
+          <button id="fitBoxToModel" type="button" class="secondary">Fit Box</button>
+          <button id="applyBoxCut" type="button">Apply Cut</button>
+        </div>
+
+        <h3>Transform</h3>
+        <div class="grid three">
+          <label>Move X<input id="moveX" type="number" step="0.5" value="0"></label>
+          <label>Move Y<input id="moveY" type="number" step="0.5" value="0"></label>
+          <label>Move Z<input id="moveZ" type="number" step="0.5" value="0"></label>
+          <label>Rot X<input id="rotX" type="number" step="1" value="0"></label>
+          <label>Rot Y<input id="rotY" type="number" step="1" value="0"></label>
+          <label>Rot Z<input id="rotZ" type="number" step="1" value="0"></label>
+          <label>Scale X<input id="scaleX" type="number" step="0.05" value="1"></label>
+          <label>Scale Y<input id="scaleY" type="number" step="0.05" value="1"></label>
+          <label>Scale Z<input id="scaleZ" type="number" step="0.05" value="1"></label>
+        </div>
+        <div class="actions compact">
+          <button id="moveToOrigin" type="button" class="secondary">Move to Origin</button>
+          <button id="moveCenterTo" type="button" class="secondary">Move Center To XYZ</button>
+          <button id="applyTransform" type="button">Apply Transform</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>4. Centerline</h2>
+        <label>
+          Method
+          <select id="method">
+            <option value="section_centroid">section_centroid</option>
+            <option value="vmtk">vmtk if installed</option>
+            <option value="centroid">centroid debug</option>
+            <option value="vtk_surface">vtk_surface debug</option>
+          </select>
+        </label>
+        <div class="grid two">
+          <label>Picker tolerance<input id="pickerTolerance" type="number" step="0.0005" value="0.005"></label>
+          <label>Resampling step<input id="resamplingStep" type="number" step="0.01" value="0.1"></label>
+          <label>Spline length<input id="splineLength" type="number" step="0.05" value="0.1"></label>
+          <label>Section radius<input id="sectionRadius" type="number" step="0.5" value="20"></label>
+        </div>
+        <label class="toggle"><input id="resample" type="checkbox" checked> Resample centerline</label>
+        <label class="toggle"><input id="clipInside" type="checkbox" checked> Clip inside section sphere</label>
+        <div class="actions compact">
+          <button id="pickSource" type="button">Pick Source</button>
+          <button id="pickTarget" type="button">Pick Target</button>
+          <button id="resetPoints" type="button" class="secondary">Reset Points</button>
+          <button id="generate" type="button">Generate</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>5. Cross Sections</h2>
+        <div class="actions compact">
+          <button id="crossSections" type="button">Calculate</button>
+          <button id="clearSections" type="button" class="secondary">Clear Sections</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>6. Export</h2>
+        <div class="actions">
+          <button id="saveGeometry" type="button">Save Edited STL</button>
+          <button id="saveCenterline" type="button">Save Centerline</button>
+          <button id="saveCsv" type="button">Save CSV</button>
+        </div>
+      </section>
+    </aside>
+
+    <section class="workspace">
+      <div class="toolbar">
+        <div>
+          <strong>3D Viewer</strong>
+          <span id="statusText">Load an STL to begin.</span>
+        </div>
+        <div class="view-actions">
+          <button id="fitView" type="button">Fit</button>
+          <button id="clearLine" type="button">Clear Line</button>
+        </div>
+      </div>
+      <div id="viewer" class="viewer">
+        <div id="viewerHelp" class="viewer-help">Mouse drag rotate | Wheel zoom | Use Pick buttons to choose endpoints</div>
+        <div id="readout" class="readout">source: none<br>target: none</div>
+      </div>
+      <pre id="log" class="log"></pre>
+    </section>
+  </main>
+
+  <script type="module" src="/web/app.js"></script>
+</body>
+</html>
